@@ -2,15 +2,26 @@ terraform {
   backend "remote" {
     organization = "hc-emea-sentinel-demo"
     workspaces {
-      name = "terraform-demo-stack"
+      name = "sentinel-demo-stack"
     }
   }
 }
 
 provider "aws" {
-  region = "eu-west-2"
 }
 
+// Workspace Data
+data "terraform_remote_state" "network" {
+  backend = "remote"
+
+  config = {
+    hostname     = "app.terraform.io"
+    organization = "hc-emea-sentinel-demo"
+    workspaces = {
+      name = "sentinel-demo-network"
+    }
+  } //config
+}
 
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -31,6 +42,7 @@ data "aws_ami" "ubuntu" {
 resource "aws_instance" "web" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
+  subnet_id     = "${data.terraform_remote_state.network.subnets[0]}"
   tags = {
     owner = "scooby"
   }
