@@ -45,6 +45,7 @@ resource "aws_instance" "web" {
   instance_type = "t2.micro"
   subnet_id     = "${data.terraform_remote_state.network.outputs.subnets[0]}"
   tags = {
-    owner = "scooby"
+    Name = "test_server"
+    owner = "StepStone"
   }
 }
