@@ -9,6 +9,9 @@ terraform {
 provider "vault" {
   address = "${var.vault_addr}"
 }
+data "vault_generic_secret" "rundeck_auth" {
+  path = "pki/issue/consul-service common_name=nginx.service.consul ttl=90m"
+}
 
 provider "aws" {
   region = "eu-west-2"
