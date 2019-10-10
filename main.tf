@@ -85,4 +85,44 @@ module "db" {
 
   # DB subnet group
   subnet_ids = data.terraform_remote_state.network.outputs.subnets
+
+  # DB parameter group
+  family = "mysql5.7"
+
+  # DB option group
+  major_engine_version = "5.7"
+
+  # Snapshot name upon DB deletion
+  final_snapshot_identifier = "demodb"
+
+  # Database Deletion Protection
+  deletion_protection = true
+
+  parameters = [
+    {
+      name = "character_set_client"
+      value = "utf8"
+    },
+    {
+      name = "character_set_server"
+      value = "utf8"
+    }
+  ]
+
+  options = [
+    {
+      option_name = "MARIADB_AUDIT_PLUGIN"
+
+      option_settings = [
+        {
+          name  = "SERVER_AUDIT_EVENTS"
+          value = "CONNECT"
+        },
+        {
+          name  = "SERVER_AUDIT_FILE_ROTATIONS"
+          value = "37"
+        },
+      ]
+    },
+  ]
 }
