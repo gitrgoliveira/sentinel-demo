@@ -9,8 +9,8 @@ terraform {
 provider "vault" {
   address = "${var.vault_addr}"
 }
-data "vault_generic_secret" "rundeck_auth" {
-  path = "pki/issue/consul-service common_name=nginx.service.consul ttl=90m"
+data "vault_generic_secret" "secret" {
+  path = "kv/test"
 }
 
 provider "aws" {
@@ -53,5 +53,6 @@ resource "aws_instance" "web" {
   tags = {
     Name = "test_server"
     owner = "StepStone"
+    tag = "${data.vault_generic_secret.secret.data["message"]}"
   }
 }
