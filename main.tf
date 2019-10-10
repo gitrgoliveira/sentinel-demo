@@ -96,7 +96,7 @@ module "db" {
   final_snapshot_identifier = "demodb"
 
   # Database Deletion Protection
-  deletion_protection = true
+  deletion_protection = false
 
   parameters = [
     {
