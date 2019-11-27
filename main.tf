@@ -6,6 +6,8 @@ terraform {
     }
   }
 }
+
+# https://www.terraform.io/docs/providers/vault/index.html
 provider "vault" {
   address = var.vault_addr
 }
