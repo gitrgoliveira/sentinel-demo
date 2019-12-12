@@ -8,12 +8,12 @@ terraform {
 }
 
 # https://www.terraform.io/docs/providers/vault/index.html
-provider "vault" {
-  address = var.vault_addr
-}
-data "vault_generic_secret" "secret" {
-  path = "kv/test"
-}
+# provider "vault" {
+#   address = var.vault_addr
+# }
+# data "vault_generic_secret" "secret" {
+#   path = "kv/test"
+# }
 
 provider "aws" {
   region = "eu-west-2"
@@ -56,6 +56,6 @@ resource "aws_instance" "web" {
   tags = {
     Name = "test_server"
     owner = "ric-sentinel-demo"
-    tag = "${data.vault_generic_secret.secret.data["message"]}"
+    # tag = "${data.vault_generic_secret.secret.data["message"]}"
   }
 }
