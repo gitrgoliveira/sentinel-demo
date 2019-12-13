@@ -3,10 +3,6 @@ provider "vault" {
   address = "https://${var.vault_host}:8200"
 }
 
-data "dns_a_record_set" "vault" {
-  host = var.vault_host
-}
-
 # data "vault_generic_secret" "secret" {
 #   path = "kv/test"
 # }
@@ -18,11 +14,11 @@ data "aws_security_group" "default" {
 
 resource "aws_security_group_rule" "allow_all" {
   type      = "ingress"
-  from_port = 0
-  to_port   = 65535
+  from_port = module.postgres.rds_cluster_port[0]
+  to_port   = module.postgres.rds_cluster_port[0]
   protocol  = "tcp"
   # Opening to 0.0.0.0/0 can lead to security vulnerabilities.
-  cidr_blocks       = ["${data.dns_a_record_set.vault.addrs[0]}/32"]
+  cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = data.aws_security_group.default.id
 }
 
