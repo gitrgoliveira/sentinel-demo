@@ -40,6 +40,13 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
+provider "vault" {
+  address = "https://${var.vault_host}:8200"
+}
+
+data "vault_generic_secret" "secret" {
+  path = "kv/test"
+}
 resource "aws_instance" "web" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
@@ -48,6 +55,7 @@ resource "aws_instance" "web" {
   tags = {
     Name  = "test_server"
     owner = "ric-sentinel-demo"
+    tag = "${data.vault_generic_secret.secret.data["message"]}"
   }
 }
 
