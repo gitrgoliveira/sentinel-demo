@@ -48,7 +48,6 @@ resource "aws_instance" "web" {
   tags = {
     Name  = "test_server"
     owner = "ric-sentinel-demo"
-    # tag = "${data.vault_generic_secret.secret.data["message"]}"
   }
 }
 

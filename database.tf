@@ -14,15 +14,15 @@ data "aws_security_group" "default" {
 
 resource "aws_security_group_rule" "allow_all" {
   type      = "ingress"
-  from_port = module.postgres.rds_cluster_port[0]
-  to_port   = module.postgres.rds_cluster_port[0]
+  from_port = module.aurora.rds_cluster_port[0]
+  to_port   = module.aurora.rds_cluster_port[0]
   protocol  = "tcp"
   # Opening to 0.0.0.0/0 can lead to security vulnerabilities.
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = data.aws_security_group.default.id
 }
 
-module "postgres" {
+module "aurora" {
   source = "git::https://github.com/clouddrove/terraform-aws-aurora.git?ref=tags/0.12.1"
 
   name        = "backend-delete"
@@ -30,14 +30,14 @@ module "postgres" {
   environment = "test"
   label_order = ["environment", "name", "application"]
 
-  username            = "root"
+  username            = "admin"
   database_name       = "test_db"
-  engine              = "aurora-postgresql"
-  engine_version      = "9.6.9"
+  engine              = "aurora-mysql"
+  engine_version      = "5.7.12"
   subnets             = data.terraform_remote_state.network.outputs.subnets
   aws_security_group  = [data.aws_security_group.default.id]
   replica_count       = 1
-  instance_type       = "db.r4.large"
+  instance_type       = "db.t2.medium"
   apply_immediately   = true
   skip_final_snapshot = true
   publicly_accessible = true
@@ -45,25 +45,28 @@ module "postgres" {
 
 
 resource "vault_mount" "db" {
-  path = "demo-postgres"
+  path = "demo-mysql"
   type = "database"
 }
 
-resource "vault_database_secret_backend_connection" "postgres" {
+resource "vault_database_secret_backend_connection" "mysql" {
   backend       = vault_mount.db.path
-  name          = "demo-postgres"
+  name          = "demo-mysql"
   allowed_roles = ["demo-role"]
 
-  postgresql {
-    connection_url = "postgres://${module.postgres.rds_cluster_master_username[0]}:${module.postgres.rds_cluster_master_password[0]}@${module.postgres.rds_cluster_endpoint[0]}:${module.postgres.rds_cluster_port[0]}/${module.postgres.rds_cluster_database_name}"
+  mysql_aurora {
+    connection_url       = "${module.aurora.rds_cluster_master_username[0]}:${module.aurora.rds_cluster_master_password[0]}@tcp(${module.aurora.rds_cluster_endpoint[0]}:${module.aurora.rds_cluster_port[0]})/"
+    max_open_connections = 256
   }
+
+  verify_connection = true
 }
 
 resource "vault_database_secret_backend_role" "role" {
   backend             = vault_mount.db.path
   name                = "demo-role"
-  db_name             = vault_database_secret_backend_connection.postgres.name
-  creation_statements = ["CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';"]
+  db_name             = vault_database_secret_backend_connection.mysql.name
+  creation_statements = ["CREATE USER '{{name}}'@'%' IDENTIFIED BY '{{password}}';GRANT SELECT ON *.* TO '{{name}}'@'%';"]
   default_ttl         = 600  # 10m
   max_ttl             = 7200 # 2h
 }
