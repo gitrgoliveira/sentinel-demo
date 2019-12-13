@@ -1,6 +1,10 @@
 # https://www.terraform.io/docs/providers/vault/index.html
 provider "vault" {
-  address = var.vault_addr
+  address = "https://${var.vault_host}:8200"
+}
+
+data "dns_a_record_set" "vault" {
+  host = var.vault_host
 }
 
 # data "vault_generic_secret" "secret" {
@@ -10,6 +14,16 @@ provider "vault" {
 data "aws_security_group" "default" {
   vpc_id = data.terraform_remote_state.network.outputs.vpc
   name   = "default"
+}
+
+resource "aws_security_group_rule" "allow_all" {
+  type      = "ingress"
+  from_port = 0
+  to_port   = 65535
+  protocol  = "tcp"
+  # Opening to 0.0.0.0/0 can lead to security vulnerabilities.
+  cidr_blocks       = ["${data.dns_a_record_set.vault}/32"]
+  security_group_id = data.aws_security_group.default.id
 }
 
 module "postgres" {
@@ -40,9 +54,9 @@ resource "vault_mount" "db" {
 }
 
 resource "vault_database_secret_backend_connection" "postgres" {
-  backend       = "${vault_mount.db.path}"
+  backend       = vault_mount.db.path
   name          = "demo-postgres"
-  allowed_roles = ["dev", "prod"]
+  allowed_roles = ["demo-role"]
 
   postgresql {
     connection_url = "postgres://${module.postgres.rds_cluster_master_username[0]}:${module.postgres.rds_cluster_master_password[0]}@${module.postgres.rds_cluster_endpoint[0]}:${module.postgres.rds_cluster_port[0]}/${module.postgres.rds_cluster_database_name}"
@@ -50,10 +64,10 @@ resource "vault_database_secret_backend_connection" "postgres" {
 }
 
 resource "vault_database_secret_backend_role" "role" {
-  backend             = "${vault_mount.db.path}"
+  backend             = vault_mount.db.path
   name                = "demo-role"
-  db_name             = "${vault_database_secret_backend_connection.postgres.name}"
+  db_name             = vault_database_secret_backend_connection.postgres.name
   creation_statements = ["CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';"]
-  default_ttl         = 600 # 10m
+  default_ttl         = 600  # 10m
   max_ttl             = 7200 # 2h
 }
