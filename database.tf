@@ -19,6 +19,15 @@ resource "aws_security_group_rule" "allow_all" {
   security_group_id = data.aws_security_group.default.id
 }
 
+# resource "aws_db_subnet_group" "default" {
+#   name       = "main"
+#   subnet_ids = ["${data.terraform_remote_state.network.outputs.subnets[0]}"]
+
+#   tags = {
+#     Name = "My DB subnet group"
+#   }
+# }
+
 resource "aws_db_instance" "default" {
   allocated_storage    = 20
   storage_type         = "gp2"
@@ -29,6 +38,8 @@ resource "aws_db_instance" "default" {
   username             = "foo"
   password             = "foobarbaz"
   parameter_group_name = "default.mysql5.7"
+  publicly_accessible  = true
+  # db_subnet_group_name
 }
 
 
