@@ -2,7 +2,7 @@ terraform {
   backend "remote" {
     organization = "hc-emea-sentinel-demo"
     workspaces {
-      prefix = "sentinel-demo-stack"
+      prefix = "sentinel-demo-stack-"
     }
   }
 }
